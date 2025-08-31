@@ -1,0 +1,5 @@
+{
+  "name": " Guia de Cafe",
+  "description": "Tu recetario de café personal. Organiza tus preparaciones por método en un menú principal limpio. Añade nuevas recetas, personaliza los ajustes del molino, la temperatura y la dosis. Guarda cada receta con un nombre único y notas personalizadas sobre el grano o el proceso. Todas tus recetas se guardan localmente.",
+  "requestFramePermissions": []
+}
