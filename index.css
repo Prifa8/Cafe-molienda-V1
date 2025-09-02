@@ -45,14 +45,21 @@ body {
 }
 
 /* --- MAIN MENU VIEW --- */
-.main-menu-container header {
+.main-menu-header {
+  display: flex;
+  justify-content: center; /* Center the title */
+  align-items: center;
   margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border-color);
 }
-.main-menu-container h1 {
+.main-menu-header h1 {
   color: var(--primary-color);
   font-weight: 700;
-  margin-bottom: 15px;
+  font-size: 1.8rem;
+  margin: 0;
 }
+
 .brew-category {
   text-align: left;
   border-bottom: 1px solid var(--border-color);
@@ -163,26 +170,6 @@ body {
     color: #757575; /* Lighter gray */
     padding: 10px;
     text-align: center;
-}
-.main-menu-container footer {
-  margin-top: 20px;
-  padding-top: 20px;
-  border-top: 1px solid var(--border-color);
-}
-.recipe-book-btn {
-    width: 100%;
-    padding: 12px;
-    border-radius: 8px;
-    border: 1px solid var(--accent-color);
-    background-color: transparent;
-    color: var(--primary-color);
-    font-size: 1rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: background-color 0.2s, color 0.2s;
-}
-.recipe-book-btn:hover {
-    background-color: var(--accent-color);
 }
 
 
@@ -351,9 +338,30 @@ input[type="range"]::-moz-range-thumb {
   padding: 20px;
   margin-top: 10px;
   margin-bottom: 25px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
 }
-.result-container p { margin: 0; font-size: 1.1rem; opacity: 0.9; }
-.result-clicks { font-size: 3.5rem; font-weight: 700; line-height: 1.2; }
+.result-range {
+  font-size: 1.5rem;
+  font-weight: 600;
+  opacity: 0.8;
+  margin: 0 0 4px 0;
+}
+.result-label {
+  margin: 0;
+  font-size: 1rem;
+  opacity: 0.9;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+.result-clicks {
+  font-size: 4.5rem;
+  font-weight: 700;
+  line-height: 1.1;
+}
 
 .save-button {
   width: 100%;
@@ -375,4 +383,133 @@ input[type="range"]::-moz-range-thumb {
   margin-top: 25px;
   font-size: 0.8rem;
   color: #9e9e9e; /* Lighter gray */
+}
+
+/* --- Proportions Guide Modal --- */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.75);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.modal-content {
+  background-color: var(--card-background);
+  border-radius: 12px;
+  padding: 25px;
+  box-shadow: 0 8px 25px var(--shadow-color);
+  width: 100%;
+  max-width: 500px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 15px;
+  margin-bottom: 15px;
+  flex-shrink: 0;
+}
+
+.modal-header h2 {
+  color: var(--primary-color);
+  font-size: 1.6rem;
+  margin: 0;
+}
+
+.modal-close-btn {
+  background: none;
+  border: none;
+  color: var(--text-color);
+  font-size: 2.5rem;
+  font-weight: 300;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0;
+}
+
+.modal-body {
+  overflow-y: auto;
+  text-align: left;
+}
+
+.modal-body section {
+  margin-bottom: 20px;
+}
+.modal-body section:last-child {
+  margin-bottom: 0;
+}
+
+.modal-body h3 {
+  color: var(--primary-color);
+  font-size: 1.3rem;
+  margin-bottom: 15px;
+  padding-bottom: 5px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.modal-body ul {
+  list-style: none;
+  padding-left: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.modal-body li {
+  background-color: var(--secondary-color);
+  padding: 12px 15px;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+}
+
+.modal-body li strong {
+  color: var(--primary-color);
+  font-weight: 600;
+  font-size: 1rem;
+  margin-bottom: 4px;
+}
+
+.modal-body li span {
+  font-size: 0.9rem;
+  color: #b0b0b0;
+  line-height: 1.4;
+}
+
+/* --- Guide Button in Main Menu --- */
+.main-menu-container footer {
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border-color);
+}
+
+.guide-button {
+    width: 100%;
+    padding: 12px;
+    border-radius: 10px;
+    border: 1px solid var(--accent-color);
+    background-color: transparent;
+    color: var(--primary-color);
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s, color 0.2s;
+}
+
+.guide-button:hover {
+    background-color: var(--accent-color);
+    color: white;
 }

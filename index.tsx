@@ -2,10 +2,32 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { createRoot } from 'react-dom/client';
 
 // Base clicks for different grinders and brewing methods, calibrated with expert recommendations.
+// Values are now ranges [min, max] for more realistic guidance.
 const GRINDERS = {
-  'Gadnic C10': { Espresso: 12, 'Moka Italiana': 14, Aeropress: 17, V60: 22, Chemex: 26, 'Prensa Francesa': 30 },
-  'Comandante C40': { Espresso: 8, 'Moka Italiana': 12, Aeropress: 16, V60: 22, Chemex: 28, 'Prensa Francesa': 34 },
-  'Timemore C2': { Espresso: 9, 'Moka Italiana': 12, Aeropress: 15, V60: 20, Chemex: 24, 'Prensa Francesa': 28 },
+  'Gadnic C10': { 
+    Espresso: [8, 12], 
+    'Moka Italiana': [12, 16], 
+    Aeropress: [15, 20], 
+    V60: [18, 24], 
+    Chemex: [24, 30], 
+    'Prensa Francesa': [28, 34] 
+  },
+  'Comandante C40': { 
+    Espresso: [6, 10], 
+    'Moka Italiana': [11, 15], 
+    Aeropress: [16, 22], 
+    V60: [23, 28], 
+    Chemex: [28, 34], 
+    'Prensa Francesa': [35, 40] 
+  },
+  'Timemore C2': { 
+    Espresso: [8, 12], 
+    'Moka Italiana': [12, 15], 
+    Aeropress: [14, 17], 
+    V60: [17, 24], 
+    Chemex: [24, 28], 
+    'Prensa Francesa': [27, 32] 
+  },
 };
 
 const BREW_METHODS_CONFIG = {
@@ -47,14 +69,75 @@ const TASTING_RECOMMENDATIONS = {
     'Equilibrado': '¡Felicidades! Lograste una extracción balanceada y deliciosa.'
 };
 
+
 // --- VIEWS ---
 
-const MainMenu = ({ presets, onSelectPreset, onAddNewPreset, onDeletePreset, onOpenRecipeBook }: {
+const ProportionsGuideModal = ({ onClose }: { onClose: () => void }) => {
+  return (
+    <div className="modal-overlay" onClick={onClose} role="dialog" aria-modal="true">
+      <div className="modal-content" onClick={e => e.stopPropagation()}>
+        <header className="modal-header">
+          <h2>Proporciones de Preparaciones</h2>
+          <button className="modal-close-btn" onClick={onClose} aria-label="Cerrar">&times;</button>
+        </header>
+        <div className="modal-body">
+          <section>
+            <h3>CAFÉ SOLO</h3>
+            <ul>
+              <li><strong>Espresso / Lungo</strong><span>20 g de café → 40 g (espresso) o 60 g (lungo)</span></li>
+              <li><strong>Doppio / Doppio Lungo</strong><span>40 g de café → 80 g (doppio) o 100+ g (lungo doppio)</span></li>
+              <li><strong>Ristretto</strong><span>20 g de café → 20–25 g de bebida</span></li>
+              <li><strong>Long Black (Americano)</strong><span>2 shots de espresso + 100–120 ml de agua caliente</span></li>
+              <li><strong>Filtrado</strong><span>1:15 a 1:17 (Ej: 20 g de café → 300–340 g de agua)</span></li>
+              <li><strong>Batch Brew</strong><span>Igual que el filtrado pero preparado en lotes</span></li>
+            </ul>
+          </section>
+          <section>
+            <h3>CAFÉ FRESCO</h3>
+            <ul>
+              <li><strong>Cold Brew</strong><span>1:8 a 1:10 (Ej: 100 g de café → 800–1000 g de agua fría, reposado 12–18 h)</span></li>
+              <li><strong>Lemon Cold Brew</strong><span>Hielo picado + 2 cdas de sirope de limón + 40 ml de espresso cold brew + agua con gas + cáscaras de limón</span></li>
+              <li><strong>Flat White Frío</strong><span>Espresso + 100 ml de leche fría texturizada</span></li>
+              <li><strong>Latte Frío</strong><span>Espresso + 150–180 ml de leche fría</span></li>
+              <li><strong>Magic Frío</strong><span>60 ml de ristretto + 150 ml de leche al vapor</span></li>
+              <li><strong>Hoppy Espresso</strong><span>Espresso + soda lupulada fría</span></li>
+            </ul>
+          </section>
+          <section>
+            <h3>CAFÉ CON LECHE</h3>
+            <ul>
+              <li><strong>Macchiato</strong><span>Espresso + una cucharada de espuma de leche</span></li>
+              <li><strong>Magic</strong><span>60 ml de ristretto + 150 ml de leche al vapor</span></li>
+              <li><strong>Cappu</strong><span>Espresso + 80 ml de leche + 80 ml de espuma (proporción 1:1:1)</span></li>
+              <li><strong>Latte</strong><span>Espresso + 150–200 ml de leche con poca espuma</span></li>
+              <li><strong>Flat White</strong><span>Espresso + 120 ml de leche texturizada (menos espuma que un cappuccino)</span></li>
+              <li><strong>Mocaccino</strong><span>Espresso + 120 ml de leche + 20-30 g de chocolate o sirope</span></li>
+              <li><strong>Vainilla Latte</strong><span>Espresso + 150–200 ml de leche + 10–20 ml de jarabe de vainilla</span></li>
+            </ul>
+          </section>
+          <section>
+            <h3>Datos Útiles</h3>
+            <ul>
+              <li><strong>Espresso clásico</strong><span>20 g de café → 40 g de bebida</span></li>
+              <li><strong>Ristretto</strong><span>20 g de café → 20–25 g de bebida</span></li>
+              <li><strong>Lungo</strong><span>20 g de café → 50–60 g de bebida</span></li>
+              <li><strong>Americano</strong><span>2 shots de espresso + agua caliente a gusto</span></li>
+              <li><strong>Filtrado</strong><span>Relación 1:15 a 1:17</span></li>
+              <li><strong>Cold Brew</strong><span>Infusión en frío por 12–18 h, 1:8 o 1:10</span></li>
+            </ul>
+          </section>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const MainMenu = ({ presets, onSelectPreset, onAddNewPreset, onDeletePreset, onOpenGuide }: {
   presets: Preset[],
   onSelectPreset: (id: string) => void,
   onAddNewPreset: (method: BrewMethod) => void,
   onDeletePreset: (id: string, name: string) => void,
-  onOpenRecipeBook: () => void,
+  onOpenGuide: () => void,
 }) => {
   const presetsByCategory = useMemo(() => {
     const categories: Record<string, Preset[]> = {};
@@ -93,7 +176,7 @@ const MainMenu = ({ presets, onSelectPreset, onAddNewPreset, onDeletePreset, onO
 
   return (
     <div className="main-menu-container">
-       <header>
+       <header className="main-menu-header">
           <h1>Guia de Cafe</h1>
         </header>
         <main>
@@ -145,9 +228,7 @@ const MainMenu = ({ presets, onSelectPreset, onAddNewPreset, onDeletePreset, onO
           ))}
         </main>
         <footer>
-          <button className="recipe-book-btn" onClick={onOpenRecipeBook}>
-              Recetario de Cafés Populares
-          </button>
+          <button className="guide-button" onClick={onOpenGuide}>Guía de Proporciones</button>
         </footer>
     </div>
   );
@@ -160,7 +241,8 @@ const CalculatorView = ({ activePreset, updateActivePreset, onBackToMenu, onSave
   onBackToMenu: () => void,
   onSave: () => void,
 }) => {
-  const [clicks, setClicks] = useState(0);
+  const [clickRange, setClickRange] = useState('');
+  const [recommendedClick, setRecommendedClick] = useState(0);
 
   const activeDose = useMemo(() => {
     const config = BREW_METHODS_CONFIG[activePreset.brewMethod];
@@ -174,15 +256,26 @@ const CalculatorView = ({ activePreset, updateActivePreset, onBackToMenu, onSave
 
   useEffect(() => {
     const { selectedGrinder, brewMethod, temperature, humidity } = activePreset;
-    const base = GRINDERS[selectedGrinder][brewMethod];
-    if (base === undefined) return;
+    const baseRange = GRINDERS[selectedGrinder][brewMethod];
+    if (!baseRange || baseRange.length !== 2) return;
+    const [baseMin, baseMax] = baseRange;
 
-    const tempAdjustment = (temperature - 22) * 0.1;
-    const humidityAdjustment = (humidity - 55) * 0.07;
+    // Adjusted neutral points for the new ranges (-10 to 40 for temp, 0 to 100 for humidity)
+    const tempAdjustment = (temperature - 15) * 0.1;
+    const humidityAdjustment = (humidity - 50) * 0.07;
     const doseAdjustment = (activeDose - 16) * 0.2;
+    
+    const totalAdjustment = tempAdjustment + humidityAdjustment + doseAdjustment;
 
-    const calculated = base + tempAdjustment + humidityAdjustment + doseAdjustment;
-    setClicks(Math.round(calculated));
+    const calculatedMin = Math.round(baseMin + totalAdjustment);
+    const calculatedMax = Math.round(baseMax + totalAdjustment);
+    
+    // Ensure min is not greater than max after adjustments
+    const finalMin = Math.min(calculatedMin, calculatedMax);
+    const finalMax = Math.max(calculatedMin, calculatedMax);
+
+    setClickRange(`${finalMin} - ${finalMax}`);
+    setRecommendedClick(Math.round((finalMin + finalMax) / 2));
   }, [activePreset, activeDose]);
   
   const renderInputs = () => {
@@ -192,7 +285,7 @@ const CalculatorView = ({ activePreset, updateActivePreset, onBackToMenu, onSave
         return (
           <div className="input-group">
             <label htmlFor="coffee-dose">Cantidad de Café: <span>{activePreset.coffeeDose}g</span></label>
-            <input type="range" id="coffee-dose" min="9" max="22" value={activePreset.coffeeDose} onChange={(e) => updateActivePreset('coffeeDose', Number(e.target.value))} />
+            <input type="range" id="coffee-dose" min="9" max="30" value={activePreset.coffeeDose} onChange={(e) => updateActivePreset('coffeeDose', Number(e.target.value))} />
           </div>
         );
       case 'water':
@@ -289,13 +382,13 @@ const CalculatorView = ({ activePreset, updateActivePreset, onBackToMenu, onSave
 
         <div className="input-group">
           <label htmlFor="temperature">Temperatura: <span>{activePreset.temperature}°C</span></label>
-          <input type="range" id="temperature" min="10" max="35" value={activePreset.temperature} onChange={(e) => updateActivePreset('temperature', Number(e.target.value))} />
+          <input type="range" id="temperature" min="-10" max="40" value={activePreset.temperature} onChange={(e) => updateActivePreset('temperature', Number(e.target.value))} />
           <p className="input-note">Completar de acuerdo al día.</p>
         </div>
 
         <div className="input-group">
           <label htmlFor="humidity">Humedad: <span>{activePreset.humidity}%</span></label>
-          <input type="range" id="humidity" min="30" max="80" value={activePreset.humidity} onChange={(e) => updateActivePreset('humidity', Number(e.target.value))} />
+          <input type="range" id="humidity" min="0" max="100" value={activePreset.humidity} onChange={(e) => updateActivePreset('humidity', Number(e.target.value))} />
           <p className="input-note">Completar de acuerdo al día.</p>
         </div>
         
@@ -313,8 +406,9 @@ const CalculatorView = ({ activePreset, updateActivePreset, onBackToMenu, onSave
         {renderTastingFeedback()}
 
         <div className="result-container" aria-live="polite">
-          <p>Clicks Recomendados</p>
-          <span className="result-clicks">{clicks}</span>
+          <p className="result-range">{clickRange}</p>
+          <p className="result-label">Recomendado</p>
+          <span className="result-clicks">{recommendedClick}</span>
         </div>
         
         <button className="save-button" onClick={onSave}>Guardar Selección</button>
@@ -343,6 +437,7 @@ const App = () => {
   
   const [view, setView] = useState<'menu' | 'calculator'>('menu');
   const [activePresetId, setActivePresetId] = useState<string | null>(null);
+  const [isGuideOpen, setIsGuideOpen] = useState(false);
 
   // Persist presets to localStorage whenever they change
   useEffect(() => {
@@ -384,8 +479,8 @@ const App = () => {
       name: `Nueva ${brewMethod}`,
       brewMethod: brewMethod,
       selectedGrinder: 'Gadnic C10',
-      temperature: 22,
-      humidity: 55,
+      temperature: 15, // New neutral default
+      humidity: 50, // New neutral default
       coffeeDose: config.type === 'dose' ? config.defaultDose : 18,
       waterAmount: config.type === 'water' ? config.defaultWater : 250,
       mokaSize: config.type === 'moka' ? config.defaultSize : '3 Tazas (~150ml)',
@@ -402,77 +497,9 @@ const App = () => {
     setView('calculator');
   }, []);
 
-  const handleDeletePreset = (id: string, name: string) => {
+  const handleDeletePreset = useCallback((id: string, name: string) => {
     if (window.confirm(`¿Estás seguro de que quieres eliminar la receta '${name}'?`)) {
         setPresets(currentPresets => currentPresets.filter(p => p.id !== id));
-    }
-  };
-
-  const handleOpenRecipeBook = useCallback(() => {
-    const recipeHTML = `
-      <html>
-        <head>
-          <title>Recetario de Cafés Populares</title>
-          <style>
-            body { font-family: Poppins, sans-serif; background-color: #121212; color: #e0e0e0; padding: 2em; line-height: 1.6; }
-            h1, h2 { color: #f0f0f0; border-bottom: 1px solid #333333; padding-bottom: 0.5em; }
-            h1 { font-size: 2.5em; }
-            h2 { font-size: 1.8em; margin-top: 1.5em; }
-            ul { list-style: none; padding-left: 0; }
-            li { margin-bottom: 0.8em; }
-            strong { color: #f5f5f5; }
-          </style>
-        </head>
-        <body>
-          <h1>Proporciones de Preparaciones</h1>
-          
-          <h2>CAFÉ SOLO</h2>
-          <ul>
-            <li><strong>Espresso / Lungo:</strong> 20 g de café → 40 g (espresso) o 60 g (lungo)</li>
-            <li><strong>Doppio / Doppio Lungo:</strong> 40 g de café → 80 g (doppio) o 100+ g (lungo doppio)</li>
-            <li><strong>Ristretto:</strong> 20 g de café → 20–25 g de bebida</li>
-            <li><strong>Long Black (Americano):</strong> 2 shots de espresso + 100–120 ml de agua caliente</li>
-            <li><strong>Filtrado:</strong> 1:15 a 1:17 (Ej: 20 g de café → 300–340 g de agua)</li>
-            <li><strong>Batch Brew:</strong> Igual que el filtrado pero preparado en lotes</li>
-          </ul>
-
-          <h2>CAFÉ FRESCO</h2>
-          <ul>
-            <li><strong>Cold Brew:</strong> 1:8 a 1:10 (Ej: 100 g de café → 800–1000 g de agua fría, reposado 12–18 h)</li>
-            <li><strong>Lemon Cold Brew:</strong> Hielo picado + 2 cdas de sirope de limón + 40 ml de espresso cold brew + agua con gas + cáscaras de limón</li>
-            <li><strong>Flat White Frío:</strong> Espresso + 100 ml de leche fría texturizada</li>
-            <li><strong>Latte Frío:</strong> Espresso + 150–180 ml de leche fría</li>
-            <li><strong>Magic Frío:</strong> 60 ml de ristretto + 150 ml de leche al vapor</li>
-            <li><strong>Hoppy Espresso:</strong> Espresso + soda lupulada fría</li>
-          </ul>
-
-          <h2>CAFÉ CON LECHE</h2>
-          <ul>
-            <li><strong>Macchiato:</strong> Espresso + una cucharada de espuma de leche</li>
-            <li><strong>Magic:</strong> 60 ml de ristretto + 150 ml de leche al vapor</li>
-            <li><strong>Cappu:</strong> Espresso + 80 ml de leche + 80 ml de espuma (proporción 1:1:1)</li>
-            <li><strong>Latte:</strong> Espresso + 150–200 ml de leche con poca espuma</li>
-            <li><strong>Flat White:</strong> Espresso + 120 ml de leche texturizada (menos espuma que un cappuccino)</li>
-            <li><strong>Mocaccino:</strong> Espresso + 120 ml de leche + 20–30 g de chocolate o sirope</li>
-            <li><strong>Vainilla Latte:</strong> Espresso + 150–200 ml de leche + 10–20 ml de jarabe de vainilla</li>
-          </ul>
-
-          <h2>Datos Útiles</h2>
-          <ul>
-            <li><strong>Espresso clásico:</strong> 20 g de café → 40 g de bebida</li>
-            <li><strong>Ristretto:</strong> 20 g de café → 20–25 g de bebida</li>
-            <li><strong>Lungo:</strong> 20 g de café → 50–60 g de bebida</li>
-            <li><strong>Americano:</strong> 2 shots de espresso + agua caliente a gusto</li>
-            <li><strong>Filtrado:</strong> Relación 1:15 a 1:17</li>
-            <li><strong>Cold Brew:</strong> Infusión en frío por 12–18 h, 1:8 o 1:10</li>
-          </ul>
-        </body>
-      </html>
-    `;
-    const recipeWindow = window.open('', '_blank');
-    if (recipeWindow) {
-      recipeWindow.document.write(recipeHTML);
-      recipeWindow.document.close();
     }
   }, []);
 
@@ -484,7 +511,7 @@ const App = () => {
           onSelectPreset={handleSelectPreset}
           onAddNewPreset={handleAddNewPreset}
           onDeletePreset={handleDeletePreset}
-          onOpenRecipeBook={handleOpenRecipeBook}
+          onOpenGuide={() => setIsGuideOpen(true)}
         />
       )}
       {view === 'calculator' && activePreset && (
@@ -495,6 +522,7 @@ const App = () => {
           onSave={handleSave}
         />
       )}
+      {isGuideOpen && <ProportionsGuideModal onClose={() => setIsGuideOpen(false)} />}
     </>
   );
 };
