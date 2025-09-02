@@ -307,6 +307,55 @@ input[type="range"]::-moz-range-thumb {
 .moka-doses-recommendations ul { list-style: none; padding: 0; }
 .moka-doses-recommendations li { display: flex; justify-content: space-between; padding: 2px 0; font-size: 0.9rem; }
 
+.environment-inputs {
+  margin-bottom: 25px;
+  text-align: left;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 15px 20px;
+  background-color: var(--secondary-color);
+}
+.environment-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+.environment-header h3 {
+  margin: 0;
+  font-weight: 600;
+  color: var(--primary-color);
+  font-size: 1.1rem;
+}
+.fetch-weather-btn {
+  background-color: transparent;
+  border: 1px solid var(--accent-color);
+  color: var(--primary-color);
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 600;
+  transition: background-color 0.2s;
+}
+.fetch-weather-btn:hover:not(:disabled) {
+  background-color: var(--accent-color);
+}
+.fetch-weather-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.environment-inputs .input-group {
+    margin-bottom: 20px;
+}
+.environment-inputs .input-group:last-child {
+    margin-bottom: 0;
+}
+.environment-inputs .input-note {
+    text-align: left;
+    margin-top: 15px;
+}
+
 .tasting-feedback-container {
   margin-top: 10px;
   margin-bottom: 25px;

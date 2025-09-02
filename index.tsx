@@ -243,6 +243,7 @@ const CalculatorView = ({ activePreset, updateActivePreset, onBackToMenu, onSave
 }) => {
   const [clickRange, setClickRange] = useState('');
   const [recommendedClick, setRecommendedClick] = useState(0);
+  const [isFetchingWeather, setIsFetchingWeather] = useState(false);
 
   const activeDose = useMemo(() => {
     const config = BREW_METHODS_CONFIG[activePreset.brewMethod];
@@ -277,6 +278,52 @@ const CalculatorView = ({ activePreset, updateActivePreset, onBackToMenu, onSave
     setClickRange(`${finalMin} - ${finalMax}`);
     setRecommendedClick(Math.round((finalMin + finalMax) / 2));
   }, [activePreset, activeDose]);
+
+  const handleFetchWeather = useCallback(() => {
+    if (!navigator.geolocation) {
+      alert('La geolocalización no es soportada por tu navegador.');
+      return;
+    }
+
+    setIsFetchingWeather(true);
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        try {
+          const { latitude, longitude } = position.coords;
+          const apiUrl = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,relative_humidity_2m`;
+          
+          const response = await fetch(apiUrl);
+          if (!response.ok) {
+            throw new Error('No se pudo obtener la información del clima.');
+          }
+          
+          const data = await response.json();
+          const temp = Math.round(data.current.temperature_2m);
+          const humidity = data.current.relative_humidity_2m;
+          
+          updateActivePreset('temperature', temp);
+          updateActivePreset('humidity', humidity);
+
+        } catch (error) {
+          console.error("Error fetching weather data:", error);
+          alert('Ocurrió un error al buscar los datos del clima.');
+        } finally {
+          setIsFetchingWeather(false);
+        }
+      },
+      (error) => {
+        console.error("Geolocation error:", error);
+        alert('No se pudo obtener la ubicación. Asegúrate de haber concedido los permisos necesarios.');
+        setIsFetchingWeather(false);
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0,
+      }
+    );
+  }, [updateActivePreset]);
   
   const renderInputs = () => {
     const config = BREW_METHODS_CONFIG[activePreset.brewMethod];
@@ -380,16 +427,23 @@ const CalculatorView = ({ activePreset, updateActivePreset, onBackToMenu, onSave
 
         {renderInputs()}
 
-        <div className="input-group">
-          <label htmlFor="temperature">Temperatura: <span>{activePreset.temperature}°C</span></label>
-          <input type="range" id="temperature" min="-10" max="40" value={activePreset.temperature} onChange={(e) => updateActivePreset('temperature', Number(e.target.value))} />
-          <p className="input-note">Completar de acuerdo al día.</p>
-        </div>
+        <div className="environment-inputs">
+            <header className="environment-header">
+                <h3>Condiciones del Día</h3>
+                <button onClick={handleFetchWeather} className="fetch-weather-btn" disabled={isFetchingWeather}>
+                    {isFetchingWeather ? 'Cargando...' : 'Usar mi ubicación'}
+                </button>
+            </header>
+            <div className="input-group">
+              <label htmlFor="temperature">Temperatura: <span>{activePreset.temperature}°C</span></label>
+              <input type="range" id="temperature" min="-10" max="40" value={activePreset.temperature} onChange={(e) => updateActivePreset('temperature', Number(e.target.value))} />
+            </div>
 
-        <div className="input-group">
-          <label htmlFor="humidity">Humedad: <span>{activePreset.humidity}%</span></label>
-          <input type="range" id="humidity" min="0" max="100" value={activePreset.humidity} onChange={(e) => updateActivePreset('humidity', Number(e.target.value))} />
-          <p className="input-note">Completar de acuerdo al día.</p>
+            <div className="input-group">
+              <label htmlFor="humidity">Humedad: <span>{activePreset.humidity}%</span></label>
+              <input type="range" id="humidity" min="0" max="100" value={activePreset.humidity} onChange={(e) => updateActivePreset('humidity', Number(e.target.value))} />
+            </div>
+            <p className="input-note">Completa manualmente o usa tu ubicación actual.</p>
         </div>
         
         <div className="input-group">
