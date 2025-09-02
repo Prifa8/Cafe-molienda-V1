@@ -279,7 +279,7 @@ const CalculatorView = ({ activePreset, updateActivePreset, onBackToMenu, onSave
     setRecommendedClick(Math.round((finalMin + finalMax) / 2));
   }, [activePreset, activeDose]);
 
-  const handleFetchWeather = useCallback(() => {
+  const handleFetchWeatherByGeolocation = useCallback(() => {
     if (!navigator.geolocation) {
       alert('La geolocalización no es soportada por tu navegador.');
       return;
@@ -325,6 +325,41 @@ const CalculatorView = ({ activePreset, updateActivePreset, onBackToMenu, onSave
     );
   }, [updateActivePreset]);
   
+  const handleFetchWeatherByCity = useCallback(async () => {
+    const city = window.prompt("Ingresa el nombre de la ciudad (Ej: Buenos Aires, Capital):");
+    if (!city || city.trim() === "") return;
+
+    setIsFetchingWeather(true);
+    try {
+      // 1. Geocode city name to get coordinates
+      const geocodingUrl = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(city)}&count=1&language=es&format=json`;
+      const geoResponse = await fetch(geocodingUrl);
+      if (!geoResponse.ok) throw new Error('Error en el servicio de geolocalización.');
+      const geoData = await geoResponse.json();
+
+      if (!geoData.results || geoData.results.length === 0) {
+        alert(`No se encontraron resultados para "${city}". Intenta ser más específico.`);
+        setIsFetchingWeather(false); // Manually set loading state before returning
+        return;
+      }
+      const { latitude, longitude } = geoData.results[0];
+
+      // 2. Fetch weather with the new coordinates
+      const apiUrl = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,relative_humidity_2m&timezone=auto`;
+      const response = await fetch(apiUrl);
+      if (!response.ok) throw new Error('No se pudo obtener la información del clima.');
+      const data = await response.json();
+      updateActivePreset('temperature', Math.round(data.current.temperature_2m));
+      updateActivePreset('humidity', data.current.relative_humidity_2m);
+
+    } catch (error) {
+      console.error("Error during city search:", error);
+      alert('Ocurrió un error al buscar la ciudad.');
+    } finally {
+      setIsFetchingWeather(false);
+    }
+  }, [updateActivePreset]);
+
   const renderInputs = () => {
     const config = BREW_METHODS_CONFIG[activePreset.brewMethod];
     switch (config.type) {
@@ -430,9 +465,14 @@ const CalculatorView = ({ activePreset, updateActivePreset, onBackToMenu, onSave
         <div className="environment-inputs">
             <header className="environment-header">
                 <h3>Condiciones del Día</h3>
-                <button onClick={handleFetchWeather} className="fetch-weather-btn" disabled={isFetchingWeather}>
-                    {isFetchingWeather ? 'Cargando...' : 'Usar mi ubicación'}
-                </button>
+                <div className="weather-actions">
+                    <button onClick={handleFetchWeatherByGeolocation} className="fetch-weather-btn" disabled={isFetchingWeather}>
+                        {isFetchingWeather ? 'Cargando...' : 'Mi Ubicación'}
+                    </button>
+                    <button onClick={handleFetchWeatherByCity} className="fetch-weather-btn" disabled={isFetchingWeather}>
+                       {isFetchingWeather ? 'Cargando...' : 'Buscar Ciudad'}
+                    </button>
+                </div>
             </header>
             <div className="input-group">
               <label htmlFor="temperature">Temperatura: <span>{activePreset.temperature}°C</span></label>
