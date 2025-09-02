@@ -244,7 +244,7 @@ const CalculatorView = ({ activePreset, updateActivePreset, onBackToMenu, onSave
   const [clickRange, setClickRange] = useState('');
   const [recommendedClick, setRecommendedClick] = useState(0);
   const [isFetchingWeather, setIsFetchingWeather] = useState(false);
-  const [locationName, setLocationName] = useState('');
+  const [locationName, setLocationName] = useState<{ city?: string; province?: string; country?: string; } | null>(null);
 
   const activeDose = useMemo(() => {
     const config = BREW_METHODS_CONFIG[activePreset.brewMethod];
@@ -282,7 +282,7 @@ const CalculatorView = ({ activePreset, updateActivePreset, onBackToMenu, onSave
 
   const handleFetchWeather = useCallback(async () => {
     setIsFetchingWeather(true);
-    setLocationName('');
+    setLocationName(null);
 
     const fetchByCity = async () => {
         const city = window.prompt("No se pudo obtener la ubicación. Por favor, ingresa tu ciudad (Ej: Buenos Aires, Capital):");
@@ -303,8 +303,8 @@ const CalculatorView = ({ activePreset, updateActivePreset, onBackToMenu, onSave
                 return;
             }
             const { latitude, longitude, name, admin1, country } = geoData.results[0];
-            const location = [name, admin1, country].filter(Boolean).join(', ');
-            setLocationName(location);
+            const displayLocation = { city: name, province: admin1, country: country };
+            setLocationName(displayLocation);
 
             const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,relative_humidity_2m&timezone=auto`;
             const weatherResponse = await fetch(weatherUrl);
@@ -336,8 +336,12 @@ const CalculatorView = ({ activePreset, updateActivePreset, onBackToMenu, onSave
                 const reverseGeoResponse = await fetch(reverseGeoUrl);
                 if (reverseGeoResponse.ok) {
                     const reverseGeoData = await reverseGeoResponse.json();
-                    const location = [reverseGeoData.city, reverseGeoData.principalSubdivision, reverseGeoData.countryName].filter(Boolean).join(', ');
-                    setLocationName(location);
+                    const displayLocation = {
+                        city: reverseGeoData.city,
+                        province: reverseGeoData.principalSubdivision,
+                        country: reverseGeoData.countryName,
+                    };
+                    setLocationName(displayLocation);
                 }
 
                 // Fetch weather data
@@ -519,7 +523,13 @@ const CalculatorView = ({ activePreset, updateActivePreset, onBackToMenu, onSave
                     {isFetchingWeather ? 'Cargando...' : 'Obtener Clima Actual'}
                 </button>
             </header>
-            {locationName && <p className="location-display">{locationName}</p>}
+            {locationName && (
+              <div className="location-display">
+                {locationName.city && <p><strong>Ciudad:</strong> {locationName.city}</p>}
+                {locationName.province && <p><strong>Provincia:</strong> {locationName.province}</p>}
+                {locationName.country && <p><strong>País:</strong> {locationName.country}</p>}
+              </div>
+            )}
             <div className="input-group">
               <label htmlFor="temperature">Temperatura: <span>{activePreset.temperature}°C</span></label>
               <input type="range" id="temperature" min="-10" max="40" value={activePreset.temperature} onChange={(e) => updateActivePreset('temperature', Number(e.target.value))} />
