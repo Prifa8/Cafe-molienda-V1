@@ -244,6 +244,7 @@ const CalculatorView = ({ activePreset, updateActivePreset, onBackToMenu, onSave
   const [clickRange, setClickRange] = useState('');
   const [recommendedClick, setRecommendedClick] = useState(0);
   const [isFetchingWeather, setIsFetchingWeather] = useState(false);
+  const [locationName, setLocationName] = useState('');
 
   const activeDose = useMemo(() => {
     const config = BREW_METHODS_CONFIG[activePreset.brewMethod];
@@ -281,6 +282,7 @@ const CalculatorView = ({ activePreset, updateActivePreset, onBackToMenu, onSave
 
   const handleFetchWeather = useCallback(async () => {
     setIsFetchingWeather(true);
+    setLocationName('');
 
     const fetchByCity = async () => {
         const city = window.prompt("No se pudo obtener la ubicación. Por favor, ingresa tu ciudad (Ej: Buenos Aires, Capital):");
@@ -300,7 +302,9 @@ const CalculatorView = ({ activePreset, updateActivePreset, onBackToMenu, onSave
                 setIsFetchingWeather(false);
                 return;
             }
-            const { latitude, longitude } = geoData.results[0];
+            const { latitude, longitude, name, admin1, country } = geoData.results[0];
+            const location = [name, admin1, country].filter(Boolean).join(', ');
+            setLocationName(location);
 
             const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,relative_humidity_2m&timezone=auto`;
             const weatherResponse = await fetch(weatherUrl);
@@ -326,6 +330,17 @@ const CalculatorView = ({ activePreset, updateActivePreset, onBackToMenu, onSave
         async (position) => {
             try {
                 const { latitude, longitude } = position.coords;
+
+                // Reverse geocoding to get location name
+                const reverseGeoUrl = `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=es`;
+                const reverseGeoResponse = await fetch(reverseGeoUrl);
+                if (reverseGeoResponse.ok) {
+                    const reverseGeoData = await reverseGeoResponse.json();
+                    const location = [reverseGeoData.city, reverseGeoData.principalSubdivision, reverseGeoData.countryName].filter(Boolean).join(', ');
+                    setLocationName(location);
+                }
+
+                // Fetch weather data
                 const apiUrl = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,relative_humidity_2m&timezone=auto`;
                 const response = await fetch(apiUrl);
                 if (!response.ok) throw new Error('No se pudo obtener la información del clima.');
@@ -346,6 +361,49 @@ const CalculatorView = ({ activePreset, updateActivePreset, onBackToMenu, onSave
         { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
     );
   }, [updateActivePreset]);
+
+  const getRecipeMetrics = useCallback(() => {
+    const { brewMethod, coffeeDose, waterAmount, mokaSize } = activePreset;
+    const config = BREW_METHODS_CONFIG[brewMethod];
+    switch (config.type) {
+      case 'dose':
+        return `Dosis: ${coffeeDose}g\nAgua: ~${Math.round(coffeeDose * config.ratio)}ml`;
+      case 'water':
+        return `Dosis: ${activeDose}g\nAgua: ${waterAmount}ml`;
+      case 'moka':
+        const mokaDetails = config.sizes[mokaSize as keyof typeof config.sizes];
+        return `Dosis: ${mokaDetails.dose}g\nAgua: ${mokaDetails.water}ml`;
+      default:
+        return '';
+    }
+  }, [activePreset, activeDose]);
+
+  const handleShare = useCallback(async () => {
+    if (!navigator.share) {
+        alert("La función de compartir no está disponible en este navegador.");
+        return;
+    }
+
+    const { name, brewMethod, selectedGrinder, temperature, humidity, notes } = activePreset;
+    const recipeMetrics = getRecipeMetrics();
+
+    const shareText = `☕ Receta de Café: ${name}\n\n` +
+                      `🔹 Método: ${brewMethod}\n` +
+                      `🔹 Molino: ${selectedGrinder}\n` +
+                      `🔹 Molienda: ${clickRange} clics\n` +
+                      `🌡️ Condiciones: ${temperature}°C y ${humidity}% de humedad\n` +
+                      `⚖️ ${recipeMetrics}\n\n` +
+                      `📝 Notas: ${notes || 'Sin notas.'}`;
+    
+    try {
+        await navigator.share({
+            title: `Receta de Café: ${name}`,
+            text: shareText,
+        });
+    } catch (error) {
+        console.error('Error al compartir la receta:', error);
+    }
+  }, [activePreset, clickRange, getRecipeMetrics]);
   
   const renderInputs = () => {
     const config = BREW_METHODS_CONFIG[activePreset.brewMethod];
@@ -421,6 +479,11 @@ const CalculatorView = ({ activePreset, updateActivePreset, onBackToMenu, onSave
             placeholder="Nombre de la preparación"
             aria-label="Nombre de la preparación"
         />
+         {navigator.share && (
+          <button onClick={handleShare} className="share-btn" aria-label="Compartir receta">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path><polyline points="16 6 12 2 8 6"></polyline><line x1="12" y1="2" x2="12" y2="15"></line></svg>
+          </button>
+        )}
       </header>
       <main>
         <div className="input-group">
@@ -456,6 +519,7 @@ const CalculatorView = ({ activePreset, updateActivePreset, onBackToMenu, onSave
                     {isFetchingWeather ? 'Cargando...' : 'Obtener Clima Actual'}
                 </button>
             </header>
+            {locationName && <p className="location-display">{locationName}</p>}
             <div className="input-group">
               <label htmlFor="temperature">Temperatura: <span>{activePreset.temperature}°C</span></label>
               <input type="range" id="temperature" min="-10" max="40" value={activePreset.temperature} onChange={(e) => updateActivePreset('temperature', Number(e.target.value))} />
