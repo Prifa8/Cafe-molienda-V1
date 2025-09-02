@@ -337,7 +337,7 @@ const CalculatorView = ({ activePreset, updateActivePreset, onBackToMenu, onSave
                 if (reverseGeoResponse.ok) {
                     const reverseGeoData = await reverseGeoResponse.json();
                     const displayLocation = {
-                        city: reverseGeoData.city,
+                        city: reverseGeoData.locality || reverseGeoData.city,
                         province: reverseGeoData.principalSubdivision,
                         country: reverseGeoData.countryName,
                     };
