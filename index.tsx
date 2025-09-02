@@ -291,7 +291,7 @@ const CalculatorView = ({ activePreset, updateActivePreset, onBackToMenu, onSave
       async (position) => {
         try {
           const { latitude, longitude } = position.coords;
-          const apiUrl = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,relative_humidity_2m`;
+          const apiUrl = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,relative_humidity_2m&timezone=auto`;
           
           const response = await fetch(apiUrl);
           if (!response.ok) {
@@ -443,7 +443,7 @@ const CalculatorView = ({ activePreset, updateActivePreset, onBackToMenu, onSave
               <label htmlFor="humidity">Humedad: <span>{activePreset.humidity}%</span></label>
               <input type="range" id="humidity" min="0" max="100" value={activePreset.humidity} onChange={(e) => updateActivePreset('humidity', Number(e.target.value))} />
             </div>
-            <p className="input-note">Completa manualmente o usa tu ubicación actual.</p>
+            <p className="input-note">Los datos del clima son una aproximación. Ajusta manualmente para mayor precisión.</p>
         </div>
         
         <div className="input-group">
@@ -476,6 +476,29 @@ const CalculatorView = ({ activePreset, updateActivePreset, onBackToMenu, onSave
 };
 
 
+// --- CONFIRMATION MODAL ---
+
+const ConfirmationModal = ({ message, onConfirm, onCancel }: {
+  message: string;
+  onConfirm: () => void;
+  onCancel: () => void;
+}) => {
+  return (
+    <div className="modal-overlay" onClick={onCancel} role="dialog" aria-modal="true" aria-labelledby="confirmation-message">
+      <div className="modal-content confirmation-modal" onClick={e => e.stopPropagation()}>
+        <div className="modal-body">
+          <p id="confirmation-message">{message}</p>
+        </div>
+        <footer className="modal-footer">
+          <button onClick={onCancel} className="modal-cancel-btn">Cancelar</button>
+          <button onClick={onConfirm} className="modal-confirm-btn">Aceptar</button>
+        </footer>
+      </div>
+    </div>
+  );
+};
+
+
 // --- APP CONTAINER ---
 
 const App = () => {
@@ -492,6 +515,7 @@ const App = () => {
   const [view, setView] = useState<'menu' | 'calculator'>('menu');
   const [activePresetId, setActivePresetId] = useState<string | null>(null);
   const [isGuideOpen, setIsGuideOpen] = useState(false);
+  const [deleteConfirmation, setDeleteConfirmation] = useState<{ id: string; name: string; } | null>(null);
 
   // Persist presets to localStorage whenever they change
   useEffect(() => {
@@ -552,10 +576,16 @@ const App = () => {
   }, []);
 
   const handleDeletePreset = useCallback((id: string, name: string) => {
-    if (window.confirm(`¿Estás seguro de que quieres eliminar la receta '${name}'?`)) {
-        setPresets(currentPresets => currentPresets.filter(p => p.id !== id));
-    }
+    setDeleteConfirmation({ id, name });
   }, []);
+
+  const executeDelete = useCallback(() => {
+    if (deleteConfirmation) {
+        setPresets(currentPresets => currentPresets.filter(p => p.id !== deleteConfirmation.id));
+        setDeleteConfirmation(null);
+    }
+  }, [deleteConfirmation]);
+
 
   return (
     <>
@@ -577,6 +607,13 @@ const App = () => {
         />
       )}
       {isGuideOpen && <ProportionsGuideModal onClose={() => setIsGuideOpen(false)} />}
+      {deleteConfirmation && (
+        <ConfirmationModal
+          message={`¿Estás seguro de que quieres eliminar la receta '${deleteConfirmation.name}'?`}
+          onConfirm={executeDelete}
+          onCancel={() => setDeleteConfirmation(null)}
+        />
+      )}
     </>
   );
 };

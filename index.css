@@ -562,3 +562,55 @@ input[type="range"]::-moz-range-thumb {
     background-color: var(--accent-color);
     color: white;
 }
+
+/* --- Confirmation Modal --- */
+.confirmation-modal {
+  max-width: 400px;
+  padding: 30px;
+}
+
+.confirmation-modal .modal-body {
+  padding: 0;
+  margin-bottom: 25px;
+  font-size: 1.1rem;
+  line-height: 1.6;
+  text-align: center;
+}
+
+.confirmation-modal .modal-body p {
+  margin: 0;
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 15px;
+}
+
+.modal-footer button {
+  padding: 10px 20px;
+  border-radius: 8px;
+  border: none;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+.modal-cancel-btn {
+  background-color: transparent;
+  border: 1px solid var(--accent-color);
+  color: var(--primary-color);
+}
+.modal-cancel-btn:hover {
+  background-color: var(--accent-color);
+  color: white;
+}
+
+.modal-confirm-btn {
+  background-color: #b71c1c; /* A deep red for confirmation of deletion */
+  color: white;
+}
+.modal-confirm-btn:hover {
+  background-color: #c62828;
+}
