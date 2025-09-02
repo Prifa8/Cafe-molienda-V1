@@ -327,10 +327,6 @@ input[type="range"]::-moz-range-thumb {
   color: var(--primary-color);
   font-size: 1.1rem;
 }
-.weather-actions {
-  display: flex;
-  gap: 8px;
-}
 .fetch-weather-btn {
   background-color: transparent;
   border: 1px solid var(--accent-color);
